@@ -1,0 +1,2 @@
+UDP already has checksums.
+We need to add in a way to check for order of delivery and that the packets actually were delivered.
