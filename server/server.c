@@ -1,6 +1,17 @@
 #include <stdio.h>
+#include <netdb.h>
 #include <string.h>
+#include <unistd.h>
 #include <stdlib.h>
+#include <time.h>
+
+#define MAX_IN_BUFF_SIZE 4096
+
+int handleRequest(int acceptfd, char* buff, int bytes_recv) {
+    printf("Buffer: %s\n", buff);
+    return 0;
+}
+
 
 int main(int argc, char** argv){
     //Defining a variable to hold the command line argument
@@ -18,6 +29,49 @@ int main(int argc, char** argv){
     //Copy the command line argument into a variable
     strcpy(listening_port, argv[1]);
 
-    //Printing command line argument for proof
-    printf("Listening Port: %s\n", listening_port);
+    #ifdef TESTING
+    printf("Listening on port %s\n", listening_port);
+    #endif
+
+    struct addrinfo hints, *serv_info;
+
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    getaddrinfo(NULL, listening_port, &hints, &serv_info);
+
+    //Store buffers (on recieving socket)
+    char buff[MAX_IN_BUFF_SIZE];
+    
+    //Clear buffer
+    memset(buff, 0, MAX_IN_BUFF_SIZE);
+
+    //Initialize the socket
+    int sockfd = socket(serv_info->ai_family, serv_info->ai_socktype, serv_info->ai_protocol);
+
+    //Bind the socket to a port
+    bind(sockfd, serv_info->ai_addr, serv_info->ai_addrlen);
+
+    //Free the server info
+    freeaddrinfo(serv_info);
+
+    int bytes_recv = 0;
+    struct sockaddr from_addr;
+    socklen_t from_addr_len = sizeof from_addr;
+
+    //Listening loop
+    while(1){
+        bytes_recv = recvfrom(sockfd, (void*)buff, MAX_IN_BUFF_SIZE, 0, &from_addr, &from_addr_len);// &from_addr, &from_addr_len);
+        if(bytes_recv){
+            handleRequest(sockfd, buff, bytes_recv);
+        
+            //Clear the buffer
+            memset(buff, 0, MAX_IN_BUFF_SIZE);
+        }
+    }
+
+    close(sockfd);
+
+    return 0;
 }
