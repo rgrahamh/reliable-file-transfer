@@ -8,7 +8,7 @@
 #define MAX_IN_BUFF_SIZE 4096
 
 int handleRequest(int acceptfd, char* buff, int bytes_recv) {
-    printf("Buffer: %s\n", buff);
+    printf("%s\n", buff);
     return 0;
 }
 

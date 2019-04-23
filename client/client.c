@@ -1,6 +1,10 @@
+#include <arpa/inet.h>
 #include <stdio.h>
+#include <netdb.h>
 #include <string.h>
+#include <unistd.h>
 #include <stdlib.h>
+#include <time.h>
 
 int main(int argc, char** argv){
     //Defining variables to hold command line arguments
@@ -25,8 +29,30 @@ int main(int argc, char** argv){
     strcpy(local_path, argv[4]);
 
     //Printing command line arguments for proof
+    #ifdef TESTING
     printf("Server IP: %s\n", server_ip);
     printf("Server Path: %s\n", server_port);
     printf("Remote Path: %s\n", remote_path);
     printf("Local Path: %s\n", local_path);
+    #endif
+
+    //Stores the buffer
+    char* buff = "This message should be sent to the server!";
+
+    //Initialize the socket
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    //Initialize the server information
+    struct sockaddr_in server_info;
+    server_info.sin_family = AF_UNSPEC;
+    server_info.sin_port = htons(atoi(server_port));
+    server_info.sin_addr.s_addr = inet_addr(server_ip);
+
+    //Send the built buffer to the server
+    sendto(sockfd, buff, (size_t)strlen(buff), 0, (const struct sockaddr *)&server_info, (socklen_t)sizeof server_info);
+
+    //Close the socket
+    close(sockfd);
+
+    return 0;
 }
