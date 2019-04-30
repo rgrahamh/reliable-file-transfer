@@ -1,6 +1,7 @@
 #include "../shared/shared.c"
-#define OUR_PORT "8080"
 #include <error.h>
+
+#define OUR_PORT "8080"
 
 int main(int argc, char** argv){
     //Defining variables to hold command line arguments
@@ -33,9 +34,10 @@ int main(int argc, char** argv){
     #endif
 
     //Stores the buffer
-    char* buff = "This message should be sent to the server!";
-    char* resp = malloc(MAX_IN_BUFF_SIZE);
-    memset(resp, 0, MAX_IN_BUFF_SIZE);
+    char* buff = malloc(MAX_BUFF_SIZE);
+    char* resp = malloc(MAX_BUFF_SIZE);
+    memset(resp, 0, MAX_BUFF_SIZE);
+    memset(resp, 0, MAX_BUFF_SIZE);
 
     //Setting up our address information
     struct addrinfo hints, *client_info;
@@ -52,6 +54,7 @@ int main(int argc, char** argv){
     //Binding the socket to a port
     bind(sockfd, client_info->ai_addr, client_info->ai_addrlen);
 
+
     //Set it to timeout after eight seconds
     struct timeval tval;
     tval.tv_sec = 8;
@@ -66,8 +69,28 @@ int main(int argc, char** argv){
     server_info.sin_port = htons(atoi(server_port));
     server_info.sin_addr.s_addr = inet_addr(server_ip);
 
-    //Send the built buffer to the server
-    sendRTP(sockfd, buff, (size_t)strlen(buff), (struct sockaddr *)&server_info, resp, MAX_IN_BUFF_SIZE, client_info->ai_addr);
+    //Send the initial handshake to the server
+    char flags = HANDSHAKE_BIT;
+    buff[0] = flags;
+    printf("Flags: %d\n", buff[0]);
+
+    //Initiate the handshake
+    resp = sendRTP(sockfd, buff, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr);
+    if(resp == NULL){
+        printf("Could not initiate handshake; exiting.\n");
+        return 2;
+    }
+
+    strcat(buff, remote_path);
+    printf("buff:%s\n", buff);
+    resp = sendRTP(sockfd, buff, strlen(buff), (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr);
+    if(resp == NULL){
+        printf("Server timeout; exiting.\n");
+        return 2;
+    }
+    
+
+    memset(buff, 0, MAX_BUFF_SIZE);
 
     //Free the address info
     freeaddrinfo(client_info);
