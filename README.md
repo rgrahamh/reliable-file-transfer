@@ -15,7 +15,7 @@ RFT (Reliable File Transfer Protocol) is a stop-and-wait transport-layer protoco
 (Will add later)
 
 ## Specification
-RTP packets will have three additional fields as the first three bits of the body:  
+RTP packets will have three additional fields as the first three bits of the body (and five bits of buffer after said flags before the actual start of the body):  
 1. `HANDSHAKE_BIT` - If the packet being sent is part of a handshake. If it is, set to 1; otherwise, set to 0.
 2. `ACK` - If the last packet was valid; set to 1 if that last packet was fine, set to 0 if the last packet was corrupted.
 3. `SEQUENCE_BIT` - Tracks the current sequence number of the packet; flips between 1 and 0 on every packet successfully received. Set to 0 during handshake, and the first packet sent should be a sequence of 1.
