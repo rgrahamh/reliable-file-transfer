@@ -1,17 +1,9 @@
-#include <stdio.h>
-#include <netdb.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <time.h>
-
-#define MAX_IN_BUFF_SIZE 4096
+#include "../shared/shared.c"
 
 int handleRequest(int acceptfd, char* buff, int bytes_recv) {
     printf("%s\n", buff);
     return 0;
 }
-
 
 int main(int argc, char** argv){
     //Defining a variable to hold the command line argument
@@ -62,7 +54,7 @@ int main(int argc, char** argv){
 
     //Listening loop
     while(1){
-        bytes_recv = recvfrom(sockfd, (void*)buff, MAX_IN_BUFF_SIZE, 0, &from_addr, &from_addr_len);// &from_addr, &from_addr_len);
+        bytes_recv = recvfrom(sockfd, (void*)buff, MAX_IN_BUFF_SIZE, 0, &from_addr, &from_addr_len);
         if(bytes_recv){
             handleRequest(sockfd, buff, bytes_recv);
         

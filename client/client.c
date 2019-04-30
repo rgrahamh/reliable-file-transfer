@@ -1,10 +1,6 @@
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <netdb.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <time.h>
+#include "../shared/shared.c"
+#define OUR_PORT "8080"
+#include <error.h>
 
 int main(int argc, char** argv){
     //Defining variables to hold command line arguments
@@ -31,16 +27,38 @@ int main(int argc, char** argv){
     //Printing command line arguments for proof
     #ifdef TESTING
     printf("Server IP: %s\n", server_ip);
-    printf("Server Path: %s\n", server_port);
+    printf("Server Port: %s\n", server_port);
     printf("Remote Path: %s\n", remote_path);
     printf("Local Path: %s\n", local_path);
     #endif
 
     //Stores the buffer
     char* buff = "This message should be sent to the server!";
+    char* resp = malloc(MAX_IN_BUFF_SIZE);
+    memset(resp, 0, MAX_IN_BUFF_SIZE);
+
+    //Setting up our address information
+    struct addrinfo hints, *client_info;
+
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    getaddrinfo(NULL, OUR_PORT, &hints, &client_info);
 
     //Initialize the socket
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    //Binding the socket to a port
+    bind(sockfd, client_info->ai_addr, client_info->ai_addrlen);
+
+    //Set it to timeout after eight seconds
+    struct timeval tval;
+    tval.tv_sec = 8;
+    tval.tv_usec = 0;
+    if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tval, sizeof tval) < 0){
+        perror("Error");
+    }
 
     //Initialize the server information
     struct sockaddr_in server_info;
@@ -49,7 +67,10 @@ int main(int argc, char** argv){
     server_info.sin_addr.s_addr = inet_addr(server_ip);
 
     //Send the built buffer to the server
-    sendto(sockfd, buff, (size_t)strlen(buff), 0, (const struct sockaddr *)&server_info, (socklen_t)sizeof server_info);
+    sendRTP(sockfd, buff, (size_t)strlen(buff), (struct sockaddr *)&server_info, resp, MAX_IN_BUFF_SIZE, client_info->ai_addr);
+
+    //Free the address info
+    freeaddrinfo(client_info);
 
     //Close the socket
     close(sockfd);
