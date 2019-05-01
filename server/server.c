@@ -8,9 +8,6 @@ void resetBuffers(char* buff, char* resp){
 int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct sockaddr * client_addr, socklen_t* client_addr_len) {
     if((unsigned char)resp[0] != HANDSHAKE_BIT){
         printf("Invalid handshake request.\n");
-        #ifdef TESTING
-        printf("Flags: %d\n", resp[0]);
-        #endif
         return 1;
     }
 
@@ -26,25 +23,27 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
     buff[0] = flags;
 
     //Send response to handshake
-    resp = sendRTP(sockfd, buff, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv);
+    resp = sendRTP(sockfd, buff, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
 
     //Until we recieve an ACK flag, we don't know that they've given us the file path.
     while(!(resp[0] | ACK_BIT)){
-        resp = sendRTP(sockfd, buff, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv);
+        resp = sendRTP(sockfd, buff, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
     }
     if(resp == NULL){
         printf("Server timeout; exiting");
         return 1;
     }
     
+    #ifdef TESTING
     printf("Path: %s\n", resp);
+    #endif
 
     FILE* file = fopen(&(resp[1]), "r");
     if(!file){
-        printf("Error opening file.");
+        printf("Error opening file.\n");
         flags = HANDSHAKE_BIT | ACK_BIT | SEQ_BIT;
         buff[0] = flags;
-        sendRTP(sockfd, buff, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv);
+        sendRTP(sockfd, buff, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 0);
         return 2;
     }
 
@@ -69,9 +68,9 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
         for(j = 1; j < MAX_BUFF_SIZE && content_offset + j < content_size; j++){
             buff[j] = file_contents[content_offset + j - 1];
         }
-        resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv);
+        resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
         while(!(resp[0] & ACK_BIT) || seq != (resp[0] & SEQ_BIT)){
-            resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv);
+            resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
             #ifdef TESTING
             printf("Failed to recieve the proper packet.\nACK Flag: %d\nSEQ Flag:%d\nseq:%d\n\n", resp[0] & ACK_BIT, resp[0] & SEQ_BIT, seq);
             #endif
@@ -87,8 +86,7 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
     //Terminate the connection
     flags |= LAST_BIT;
     buff[0] = flags;
-    resp = sendRTP(sockfd, &flags, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv);
-
+    sendRTP(sockfd, &flags, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 0);
 
     return 0;
 }

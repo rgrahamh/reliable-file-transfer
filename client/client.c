@@ -70,7 +70,7 @@ int main(int argc, char** argv){
     int bytes_recv;
 
     //Initiate the handshake
-    resp = sendRTP(sockfd, buff, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv);
+    resp = sendRTP(sockfd, buff, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv, 1);
     if(resp == NULL){
         printf("Could not initiate handshake; exiting.\n");
         return 2;
@@ -81,13 +81,17 @@ int main(int argc, char** argv){
     printf("buff:%s\n", buff);
     flags = HANDSHAKE_BIT | ACK_BIT;
     buff[0] = flags;
-    resp = sendRTP(sockfd, buff, strlen(buff), (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv);
+    resp = sendRTP(sockfd, buff, strlen(buff), (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv, 1);
     if(resp == NULL){
         printf("Server timeout; exiting.\n");
         return 2;
     }
     
     //Start recieving the file
+    if((resp[0] & HANDSHAKE_BIT) && (resp[0] & ACK_BIT) && (resp[0] & SEQ_BIT)){
+        printf("Cannot find the file '%s' on the server.\n", remote_path);
+        return 3;
+    }
     int file_size = bytes_recv - 1;
     char* file_contents = malloc(file_size);
     int file_offset = 0;
@@ -101,7 +105,7 @@ int main(int argc, char** argv){
         }
         
         //Look for new packets while the sequence bit doesn't match the current packet in the sequence
-        resp = sendRTP(sockfd, &flags, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv);
+        resp = sendRTP(sockfd, &flags, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv, 1);
 
         //Update values based upon the new response
         file_offset = file_size;
