@@ -2,6 +2,13 @@
 
 #define OUR_PORT "8080"
 
+void checkTimeout(char* resp){
+    if(resp == NULL){
+        printf("Timeout occurred!");
+        exit(2);
+    }
+}
+
 int main(int argc, char** argv){
     //Defining variables to hold command line arguments
     char *server_ip, *server_port, *remote_path, *local_path;
@@ -69,12 +76,14 @@ int main(int argc, char** argv){
 
     //Initiate the handshake
     resp = sendRTP(sockfd, buff, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv, 1);
+    checkTimeout(resp);
 
     //Send the request for the file
     strcat(buff, remote_path);
     flags = HANDSHAKE_BIT | ACK_BIT;
     buff[0] = flags;
     resp = sendRTP(sockfd, buff, strlen(buff), (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv, 1);
+    checkTimeout(resp);
     
     //Start recieving the file
     if((resp[0] & HANDSHAKE_BIT) && (resp[0] & ACK_BIT) && (resp[0] & SEQ_BIT)){
@@ -93,6 +102,7 @@ int main(int argc, char** argv){
         }
         
         resp = sendRTP(sockfd, &flags, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv, 1);
+        checkTimeout(resp);
 
         //Update values based upon the new response
         if(seq != (resp[0] & SEQ_BIT)){

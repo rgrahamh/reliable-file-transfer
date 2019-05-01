@@ -28,8 +28,8 @@ char* sendRTP(int sockfd, char* msg, size_t msg_len, struct sockaddr * to_addr, 
         *bytes_recv = recvfrom(sockfd, resp, resp_len, 0, from_addr, &from_addr_len);
     }
     if(tryCount == 8){
-        printf("Timeout occurred, exiting.\n");
-        exit(2);
+        printf("Timeout occurred.\n");
+        return NULL;
     }
     return resp;
 }

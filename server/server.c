@@ -24,10 +24,16 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
 
     //Send response to handshake
     resp = sendRTP(sockfd, buff, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
+    if(resp == NULL){
+        return 2;
+    }
 
     //Until we recieve an ACK flag, we don't know that they've given us the file path.
     while(!(resp[0] & ACK_BIT)){
         resp = sendRTP(sockfd, buff, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
+        if(resp == NULL){
+            return 2;
+        }
     }
     
     printf("Serving file: %s\n", &(resp[1]));
@@ -38,7 +44,7 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
         flags = HANDSHAKE_BIT | ACK_BIT | SEQ_BIT;
         buff[0] = flags;
         sendRTP(sockfd, buff, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 0);
-        return 2;
+        return 3;
     }
 
     //Get the content size and read the file into the out_buff
@@ -63,6 +69,9 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
             buff[j] = file_contents[content_offset + j - 1];
         }
         resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
+        if(resp == NULL){
+            return 2;
+        }
         while(!(resp[0] & ACK_BIT) || seq != (resp[0] & SEQ_BIT)){
             resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
         }
@@ -79,6 +88,9 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
     flags |= LAST_BIT;
     buff[0] = flags;
     sendRTP(sockfd, &flags, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 0);
+    if(resp == NULL){
+        return 2;
+    }
 
     return 0;
 }
