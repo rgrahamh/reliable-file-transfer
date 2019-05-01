@@ -1,5 +1,4 @@
 #include "../shared/shared.c"
-#include <error.h>
 
 #define OUR_PORT "8080"
 
@@ -47,9 +46,9 @@ int main(int argc, char** argv){
     bind(sockfd, client_info->ai_addr, client_info->ai_addrlen);
 
 
-    //Set it to timeout after eight seconds
+    //Set it to timeout after two seconds
     struct timeval tval;
-    tval.tv_sec = 8;
+    tval.tv_sec = 2;
     tval.tv_usec = 0;
     if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tval, sizeof tval) < 0){
         perror("Error");
@@ -70,20 +69,12 @@ int main(int argc, char** argv){
 
     //Initiate the handshake
     resp = sendRTP(sockfd, buff, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv, 1);
-    if(resp == NULL){
-        printf("Could not initiate handshake; exiting.\n");
-        return 2;
-    }
 
     //Send the request for the file
     strcat(buff, remote_path);
     flags = HANDSHAKE_BIT | ACK_BIT;
     buff[0] = flags;
     resp = sendRTP(sockfd, buff, strlen(buff), (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv, 1);
-    if(resp == NULL){
-        printf("Server timeout; exiting.\n");
-        return 2;
-    }
     
     //Start recieving the file
     if((resp[0] & HANDSHAKE_BIT) && (resp[0] & ACK_BIT) && (resp[0] & SEQ_BIT)){
@@ -93,7 +84,7 @@ int main(int argc, char** argv){
     int file_size = bytes_recv - 1;
     char* file_contents = malloc(file_size);
     int file_offset = 0;
-    int seq = resp[0] | SEQ_BIT;
+    int seq = resp[0] & SEQ_BIT;
     flags = seq | ACK_BIT;
     while(!(resp[0] & LAST_BIT)){
         //Copy over file contents
@@ -116,6 +107,7 @@ int main(int argc, char** argv){
         flags = seq | ACK_BIT;
     }
 
+    //Writing recieved contents to the file
     FILE* file = fopen(local_path, "w");
     if(!file){
         printf("Could not open the file for writing.\n");

@@ -26,12 +26,8 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
     resp = sendRTP(sockfd, buff, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
 
     //Until we recieve an ACK flag, we don't know that they've given us the file path.
-    while(!(resp[0] | ACK_BIT)){
+    while(!(resp[0] & ACK_BIT)){
         resp = sendRTP(sockfd, buff, 1, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
-    }
-    if(resp == NULL){
-        printf("Server timeout; exiting");
-        return 1;
     }
     
     printf("Serving file: %s\n", &(resp[1]));
@@ -69,6 +65,7 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
         resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
         while(!(resp[0] & ACK_BIT) || seq != (resp[0] & SEQ_BIT)){
             resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
+            printf("Flags:\nSEQ_BIT: %d\n seq: %d\n", resp[0] & SEQ_BIT, seq);
         }
 
         //Alternate between setting and unsetting the sequence bit
@@ -124,9 +121,9 @@ int main(int argc, char** argv){
     //Bind the socket to a port
     bind(sockfd, serv_info->ai_addr, serv_info->ai_addrlen);
 
-    //Set it to timeout after eight seconds
+    //Set it to timeout after two seconds
     struct timeval tval;
-    tval.tv_sec = 8;
+    tval.tv_sec = 2;
     tval.tv_usec = 0;
     if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tval, sizeof tval) < 0){
         perror("Error");
