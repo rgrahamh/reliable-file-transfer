@@ -34,9 +34,7 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
         return 1;
     }
     
-    #ifdef TESTING
-    printf("Path: %s\n", resp);
-    #endif
+    printf("Serving file: %s\n", resp);
 
     FILE* file = fopen(&(resp[1]), "r");
     if(!file){
@@ -71,9 +69,6 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
         resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
         while(!(resp[0] & ACK_BIT) || seq != (resp[0] & SEQ_BIT)){
             resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
-            #ifdef TESTING
-            printf("Failed to recieve the proper packet.\nACK Flag: %d\nSEQ Flag:%d\nseq:%d\n\n", resp[0] & ACK_BIT, resp[0] & SEQ_BIT, seq);
-            #endif
         }
 
         //Alternate between setting and unsetting the sequence bit
@@ -107,9 +102,7 @@ int main(int argc, char** argv){
     //Copy the command line argument into a variable
     strcpy(listening_port, argv[1]);
 
-    #ifdef TESTING
     printf("Listening on port %s\n", listening_port);
-    #endif
 
     struct addrinfo hints, *serv_info;
 

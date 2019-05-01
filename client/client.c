@@ -64,7 +64,6 @@ int main(int argc, char** argv){
     //Send the initial handshake to the server
     char flags = HANDSHAKE_BIT;
     buff[0] = flags;
-    printf("Flags: %d\n", buff[0]);
 
     //Tells us how many bytes were received by sendRTP
     int bytes_recv;
@@ -78,7 +77,6 @@ int main(int argc, char** argv){
 
     //Send the request for the file
     strcat(buff, remote_path);
-    printf("buff:%s\n", buff);
     flags = HANDSHAKE_BIT | ACK_BIT;
     buff[0] = flags;
     resp = sendRTP(sockfd, buff, strlen(buff), (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv, 1);
@@ -101,7 +99,6 @@ int main(int argc, char** argv){
         //Copy over file contents
         for(int i = 0; i < bytes_recv - 1; i++){
             file_contents[i+file_offset] = resp[i+1];
-            printf("%c", resp[i]);
         }
         
         //Look for new packets while the sequence bit doesn't match the current packet in the sequence
@@ -125,14 +122,8 @@ int main(int argc, char** argv){
         return 3;
     }
 
-    #ifdef TESTING
-    printf("Contents of file:\n");
-    #endif
     for(int i = 0; i < file_size; i++){
         fprintf(file, "%c", file_contents[i]);
-        #ifdef TESTING
-        printf("%c", file_contents[i]);
-        #endif
     }
 
     fclose(file);
