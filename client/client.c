@@ -92,19 +92,16 @@ int main(int argc, char** argv){
             file_contents[i+file_offset] = resp[i+1];
         }
         
-        //Look for new packets while the sequence bit doesn't match the current packet in the sequence
         resp = sendRTP(sockfd, &flags, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv, 1);
 
         //Update values based upon the new response
-        file_offset = file_size;
-        file_size += bytes_recv - 1;
-        realloc(file_contents, file_size);
-        if(seq){
-            seq = 0;
-        } else {
-            seq = SEQ_BIT;
+        if(seq != (resp[0] & SEQ_BIT)){
+            file_offset = file_size;
+            file_size += bytes_recv - 1;
+            realloc(file_contents, file_size);
+            seq = (resp[0] & SEQ_BIT);
+            flags = seq | ACK_BIT;
         }
-        flags = seq | ACK_BIT;
     }
 
     //Writing recieved contents to the file

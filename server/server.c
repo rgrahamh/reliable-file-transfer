@@ -65,8 +65,8 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
         resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
         while(!(resp[0] & ACK_BIT) || seq != (resp[0] & SEQ_BIT)){
             resp = sendRTP(sockfd, buff, j, client_addr, resp, MAX_BUFF_SIZE, serv_addr, &bytes_recv, 1);
-            printf("Flags:\nSEQ_BIT: %d\n seq: %d\n", resp[0] & SEQ_BIT, seq);
         }
+        printf("Flags:\nSEQ_BIT: %d\n seq: %d\n", resp[0] & SEQ_BIT, seq);
 
         //Alternate between setting and unsetting the sequence bit
         seq = (seq)? 0 : SEQ_BIT;

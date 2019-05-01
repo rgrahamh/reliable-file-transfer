@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define MAX_BUFF_SIZE 512
+#define MAX_BUFF_SIZE 256
 
 #define HANDSHAKE_BIT 0x80
 #define ACK_BIT 0x40
@@ -28,7 +28,7 @@ char* sendRTP(int sockfd, char* msg, size_t msg_len, struct sockaddr * to_addr, 
         *bytes_recv = recvfrom(sockfd, resp, resp_len, 0, from_addr, &from_addr_len);
     }
     if(tryCount == 8){
-        printf("Timeout occurred, exiting.");
+        printf("Timeout occurred, exiting.\n");
         exit(2);
     }
     return resp;
