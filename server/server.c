@@ -34,7 +34,7 @@ int handleRequest(int sockfd, char* resp, struct sockaddr * serv_addr, struct so
         return 1;
     }
     
-    printf("Serving file: %s\n", resp);
+    printf("Serving file: %s\n", &(resp[1]));
 
     FILE* file = fopen(&(resp[1]), "r");
     if(!file){
