@@ -25,14 +25,6 @@ int main(int argc, char** argv){
     strcpy(remote_path, argv[3]);
     strcpy(local_path, argv[4]);
 
-    //Printing command line arguments for proof
-    #ifdef TESTING
-    printf("Server IP: %s\n", server_ip);
-    printf("Server Port: %s\n", server_port);
-    printf("Remote Path: %s\n", remote_path);
-    printf("Local Path: %s\n", local_path);
-    #endif
-
     //Stores the buffer
     char* buff = malloc(MAX_BUFF_SIZE);
     char* resp = malloc(MAX_BUFF_SIZE);
@@ -74,23 +66,72 @@ int main(int argc, char** argv){
     buff[0] = flags;
     printf("Flags: %d\n", buff[0]);
 
+    //Tells us how many bytes were received by sendRTP
+    int bytes_recv;
+
     //Initiate the handshake
-    resp = sendRTP(sockfd, buff, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr);
+    resp = sendRTP(sockfd, buff, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv);
     if(resp == NULL){
         printf("Could not initiate handshake; exiting.\n");
         return 2;
     }
 
+    //Send the request for the file
     strcat(buff, remote_path);
     printf("buff:%s\n", buff);
-    resp = sendRTP(sockfd, buff, strlen(buff), (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr);
+    flags = HANDSHAKE_BIT | ACK_BIT;
+    buff[0] = flags;
+    resp = sendRTP(sockfd, buff, strlen(buff), (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv);
     if(resp == NULL){
         printf("Server timeout; exiting.\n");
         return 2;
     }
     
+    //Start recieving the file
+    int file_size = bytes_recv - 1;
+    char* file_contents = malloc(file_size);
+    int file_offset = 0;
+    int seq = resp[0] | SEQ_BIT;
+    flags = seq | ACK_BIT;
+    while(!(resp[0] & LAST_BIT)){
+        //Copy over file contents
+        for(int i = 0; i < bytes_recv - 1; i++){
+            file_contents[i+file_offset] = resp[i+1];
+            printf("%c", resp[i]);
+        }
+        
+        //Look for new packets while the sequence bit doesn't match the current packet in the sequence
+        resp = sendRTP(sockfd, &flags, 1, (struct sockaddr *)&server_info, resp, MAX_BUFF_SIZE, client_info->ai_addr, &bytes_recv);
 
-    memset(buff, 0, MAX_BUFF_SIZE);
+        //Update values based upon the new response
+        file_offset = file_size;
+        file_size += bytes_recv - 1;
+        realloc(file_contents, file_size);
+        if(seq){
+            seq = 0;
+        } else {
+            seq = SEQ_BIT;
+        }
+        flags = seq | ACK_BIT;
+    }
+
+    FILE* file = fopen(local_path, "w");
+    if(!file){
+        printf("Could not open the file for writing.\n");
+        return 3;
+    }
+
+    #ifdef TESTING
+    printf("Contents of file:\n");
+    #endif
+    for(int i = 0; i < file_size; i++){
+        fprintf(file, "%c", file_contents[i]);
+        #ifdef TESTING
+        printf("%c", file_contents[i]);
+        #endif
+    }
+
+    fclose(file);
 
     //Free the address info
     freeaddrinfo(client_info);
