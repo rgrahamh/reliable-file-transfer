@@ -4,7 +4,6 @@
 
 void checkTimeout(char* resp){
     if(resp == NULL){
-        printf("Timeout occurred!");
         exit(2);
     }
 }
