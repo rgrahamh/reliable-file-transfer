@@ -4,6 +4,7 @@
 
 void checkTimeout(char* resp){
     if(resp == NULL){
+        printf("Timeout occurred!");
         exit(2);
     }
 }
@@ -92,8 +93,8 @@ int main(int argc, char** argv){
     int file_size = bytes_recv - 1;
     char* file_contents = malloc(file_size);
     int file_offset = 0;
-    int seq = 0;
-    flags = ACK_BIT;
+    int seq = resp[0] & SEQ_BIT;
+    flags = seq | ACK_BIT;
     while(!(resp[0] & LAST_BIT)){
         //Copy over file contents
         for(int i = 0; i < bytes_recv - 1; i++){
