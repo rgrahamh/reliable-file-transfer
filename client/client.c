@@ -52,7 +52,6 @@ int main(int argc, char** argv){
     //Binding the socket to a port
     bind(sockfd, client_info->ai_addr, client_info->ai_addrlen);
 
-
     //Set it to timeout after two seconds
     struct timeval tval;
     tval.tv_sec = 2;
@@ -91,7 +90,7 @@ int main(int argc, char** argv){
         return 3;
     }
     int file_size = bytes_recv - 1;
-    char* file_contents = malloc(file_size);
+    char* file_contents = malloc(10000000);
     int file_offset = 0;
     int seq = resp[0] & SEQ_BIT;
     flags = seq | ACK_BIT;
@@ -108,7 +107,7 @@ int main(int argc, char** argv){
         if(seq != (resp[0] & SEQ_BIT)){
             file_offset = file_size;
             file_size += bytes_recv - 1;
-            realloc(file_contents, file_size);
+            //realloc(file_contents, file_size);
             seq = (resp[0] & SEQ_BIT);
             flags = seq | ACK_BIT;
         }
